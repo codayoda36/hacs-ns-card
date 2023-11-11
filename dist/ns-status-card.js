@@ -12,7 +12,7 @@ class NsStatusCard extends HTMLElement {
           <style>
           .ns_card {
             background-color: #FEC919;
-            background-image: url('/local/community/ns-status-card/ns_card_bg.jpg');
+            background-image: url('/local/community/hacs-ns-card/ns_card_bg.jpg');
             background-size: cover;
             color: #000;
           }
