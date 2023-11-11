@@ -62,6 +62,22 @@ class NsStatusCard extends HTMLElement {
             display:block;
           }
 
+          .ns_card_transfers {
+            margin-top: 4px;
+          }
+
+          .ns_card_transfers span {
+            width: 100%;
+            font-size: 10px;
+            display: block;
+            line-height: 1.2;
+          }
+          .ns_card_transfers b {
+            font-size: 18px;
+            font-weight: 700;
+            display:block;
+          }
+
           .ns_card_updated {
             position: absolute;
             bottom: 12px;
@@ -83,7 +99,8 @@ class NsStatusCard extends HTMLElement {
                 "next": "Next",
                 "updated": "ago",
                 "minutes": "min",
-                "seconds": "sec"
+                "seconds": "sec",
+                "transfers": "Transfers"
             },
             "nl": {
                 "depart": "Geldig op",
@@ -92,16 +109,8 @@ class NsStatusCard extends HTMLElement {
                 "next": "Volgende",
                 "updated": "geleden",
                 "minutes": "minuten",
-                "seconds": "seconden"
-            },
-            "ru": {
-                "depart": "Отправляется",
-                "platform": "Платформа",
-                "route": "Маршрут",
-                "next": "Следующий",
-                "updated": "назад",
-                "minutes": "минут",
-                "seconds": "секунд"
+                "seconds": "seconden",
+                "transfers": "Overstappen"
             }
         }
 
@@ -133,7 +142,7 @@ class NsStatusCard extends HTMLElement {
             arrivalLoc = attributes.route[2];
         }
 
-        let timeAgo = timeSince(state.last_updated, translation);
+        let timeAgo = timeSince(attributes.last_updated, translation);
 
         let platform = '';
         if (attributes.departure_platform_actual) {
@@ -141,8 +150,8 @@ class NsStatusCard extends HTMLElement {
         }
 
         let next = '';
-        if (attributes.next) {
-            next = attributes.next
+        if (attributes.next_train) {
+            next = attributes.next_train
         }
 
         this.content.innerHTML = `
@@ -164,6 +173,10 @@ class NsStatusCard extends HTMLElement {
 
         <div class="ns_card_route">
           <span>${translation.next} - ${next}</span>
+        </div>
+        
+        <div class="ns_card_transfers">
+          <span>${translation.transfers} - ${attributes.tranfers}</span>
         </div>
 
         <div class="ns_card_updated">
