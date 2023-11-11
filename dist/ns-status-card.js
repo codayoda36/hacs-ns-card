@@ -97,7 +97,7 @@ class NsStatusCard extends HTMLElement {
                 "platform": "Platform",
                 "route": "Route",
                 "next": "Next",
-                "updated": "ago",
+                "updated": "Last updated at:",
                 "minutes": "min",
                 "seconds": "sec",
                 "transfers": "Transfers"
@@ -107,7 +107,7 @@ class NsStatusCard extends HTMLElement {
                 "platform": "Perron",
                 "route": "Enkele Reis",
                 "next": "Volgende",
-                "updated": "geleden",
+                "updated": "Laatst geüpdatet op:",
                 "minutes": "minuten",
                 "seconds": "seconden",
                 "transfers": "Overstappen"
@@ -141,8 +141,6 @@ class NsStatusCard extends HTMLElement {
         if (attributes.route[2]) {
             arrivalLoc = attributes.route[2];
         }
-
-        let timeAgo = timeSince(attributes.last_updated, translation);
 
         let platform = '';
         if (attributes.departure_platform_actual) {
@@ -180,7 +178,7 @@ class NsStatusCard extends HTMLElement {
         </div>
 
         <div class="ns_card_updated">
-          <span>${timeAgo} ${translation.updated}</span>
+          <span>${translation.updated} ${attributes.last_updated}</span>
         </div>
         <br><br>
 
@@ -205,26 +203,3 @@ class NsStatusCard extends HTMLElement {
 }
 
 customElements.define('ns-status-card', NsStatusCard);
-
-
-function diff_minutes(dt2, dt1) {
-
-    var diff = (dt2.getTime() - dt1.getTime()) / 1000;
-    diff /= 60;
-    return Math.abs(Math.round(diff));
-
-}
-
-function timeSince(timeString, translation) {
-    // Parse the timeString into a Date object
-    const time = new Date(timeString);
-
-    // Calculate the difference between the time and the current time
-    const diff = new Date() - time;
-
-    // Convert the difference to minutes
-    const minutes = Math.floor(diff / 1000 / 60);
-
-    // Return the number of minutes if it's at least 1 minute, otherwise return the number of seconds
-    return minutes >= 1 ? `${minutes} ${translation.minutes}` : `${Math.floor(diff / 1000)} ${translation.seconds}`;
-}
