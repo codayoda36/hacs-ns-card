@@ -5,91 +5,97 @@ class NsStatusCard extends HTMLElement {
         // Initialize the content if it's not there yet.
         if (!this.content) {
             this.innerHTML = `
-          <ha-card class="ns_card">
+                <div id="slider-container" class="slider-container"></div>
+                <style>
+                    .slider-container {
+                        display: flex;
+                        overflow-x: auto;
+                        scroll-snap-type: x mandatory;
+                        scrollbar-width: none; /* Hides scrollbar in Firefox */
+                        -ms-overflow-style: none; /* Hides scrollbar in IE and Edge */
+                    }
 
-            <div class="card-content"></div>
-          </ha-card>
-          <style>
-          .ns_card {
-            background-color: #FEC919;
-            background-image: url('/local/community/hacs-ns-card/ns_card_bg.jpg');
-            background-size: cover;
-            color: #000;
-          }
-          .ns_card_departure_platform {
-            position: absolute;
-            right: 10px;
-            top: 10px;
-          }
-          .ns_card_departure_platform span {
-            width: 100%;
-            font-size: 10px;
-            display: block;
-          }
-          .ns_card_departure_platform b {
-            font-size: 32px;
-            font-weight: 800;
-          }
-          .ns_card_departure_time span {
-            width: 100%;
-            font-size: 10px;
-            display: block;
-            line-height: 1.2;
-          }
-          .ns_card_departure_time b {
-            font-size: 18px;
-            font-weight: 700;
-          }
-          .ns_card_departure_time b i {
-            color: red;
-            font-style: normal;
-            font-weight: 800;
-          }
+                    .slider-container::-webkit-scrollbar {
+                        display: none; /* Hides scrollbar in Chrome, Safari, and Opera */
+                    }
 
-          .ns_card_route {
-            margin-top: 4px;
-          }
+                     .ns_card {
+                        background-color: #FEC919;
+                        background-image: url('/local/community/hacs-ns-card/ns_card_bg.jpg');
+                        background-size: cover;
+                        color: #000;
+                    }
+                    .ns_card_departure_platform {
+                        position: absolute;
+                        right: 10px;
+                        top: 10px;
+                    }
+                    .ns_card_departure_platform span {
+                        width: 100%;
+                        font-size: 10px;
+                        display: block;
+                    }
+                    .ns_card_departure_platform b {
+                        font-size: 32px;
+                        font-weight: 800;
+                    }
+                    .ns_card_departure_time span {
+                        width: 100%;
+                        font-size: 10px;
+                        display: block;
+                        line-height: 1.2;
+                    }
+                    .ns_card_departure_time b {
+                        font-size: 18px;
+                        font-weight: 700;
+                    }
+                    .ns_card_departure_time b i {
+                        color: red;
+                        font-style: normal;
+                        font-weight: 800;
+                    }
 
-          .ns_card_route span {
-            width: 100%;
-            font-size: 10px;
-            display: block;
-            line-height: 1.2;
-          }
-          .ns_card_route b {
-            font-size: 18px;
-            font-weight: 700;
-            display:block;
-          }
+                    .ns_card_route {
+                        margin-top: 4px;
+                    }
 
-          .ns_card_transfers {
-            margin-top: 4px;
-          }
+                    .ns_card_route span {
+                        width: 100%;
+                        font-size: 10px;
+                        display: block;
+                        line-height: 1.2;
+                    }
+                    .ns_card_route b {
+                        font-size: 18px;
+                        font-weight: 700;
+                        display:block;
+                    }
 
-          .ns_card_transfers span {
-            width: 100%;
-            font-size: 10px;
-            display: block;
-            line-height: 1.2;
-          }
-          .ns_card_transfers b {
-            font-size: 18px;
-            font-weight: 700;
-            display:block;
-          }
+                    .ns_card_transfers {
+                        margin-top: 4px;
+                    }
 
-          .ns_card_updated {
-            position: absolute;
-            bottom: 12px;
-            font-size: 12px;
-          }
-          </style>
-        `;
-            this.content = this.querySelector('div');
+                    .ns_card_transfers span {
+                        width: 100%;
+                        font-size: 10px;
+                        display: block;
+                        line-height: 1.2;
+                    }
+                    .ns_card_transfers b {
+                        font-size: 18px;
+                        font-weight: 700;
+                        display:block;
+                    }
+
+                    .ns_card_updated {
+                        position: absolute;
+                        bottom: 12px;
+                        font-size: 12px;
+                    }
+                </style>
+            `;
+            this.content = this.querySelector('#slider-container');
         }
-
-        // debug
-        // console.log(hass);
 
         const translations = {
             "en": {
@@ -112,77 +118,48 @@ class NsStatusCard extends HTMLElement {
                 "seconds": "seconden",
                 "transfers": "Overstappen"
             }
-        }
+        };
 
-        let translation = translations["en"]
-        const lang = hass.language
-        if (translations.hasOwnProperty(lang)) {
-            translation = translations[lang]
-        }
+        const trips = Array.from({ length: 6 }, (_, i) => i + 1); // Create an array [1, 2, 3, 4, 5, 6]
 
-        const entityId = this.config.entity;
-        const state = hass.states[entityId];
-        const stateStr = state ? state.state : 'unavailable';
-        const attributes = state.attributes;
+        this.content.innerHTML = trips.map((tripNumber) => {
+            const tripAttributes = this.attributesForTrip(hass.states[this.config.entity].attributes, tripNumber);
+            const delay = this.getDelay(tripAttributes);
+            const translation = translations[hass.language] || translations["en"];
 
-        let delay = '';
+            return `
+                <ha-card class="ns_card">
+                    <div class="card-content">
+                        <div class="ns_card_departure_time">
+                            <span>${translation.depart} - Trip ${tripNumber}</span>
+                            <b>${tripAttributes.departure_time_planned} <i>${delay}</i></b>
+                        </div>
 
-        if (attributes.departure_delay == true) {
-            var startTime = new Date('2013/10/09 ' + attributes.departure_time_planned);
-            var startTime = new Date('2013/10/09 ' + attributes.departure_time_planned);
-            var startTime = new Date('2013/10/09 ' + attributes.departure_time_planned);
-            var endTime = new Date('2013/10/09 ' + attributes.departure_time_actual);
-            var difference = endTime.getTime() - startTime.getTime(); // This will give difference in milliseconds
-            var delayTime = Math.round(difference / 60000);
-            delay = '+' + delayTime;
-        }
+                        <div class="ns_card_departure_platform">
+                            <span>${translation.platform}</span>
+                            <b>${tripAttributes.departure_platform_actual}</b>
+                        </div>
 
-        let arrivalLoc = attributes.route[1];
-        if (attributes.route[2]) {
-            arrivalLoc = attributes.route[2];
-        }
+                        <div class="ns_card_route">
+                            <span>${translation.route}</span>
+                            <b>${tripAttributes.route[0]}</b>
+                            <b>${tripAttributes.route[1]}</b>
+                        </div>
 
-        let platform = '';
-        if (attributes.departure_platform_actual) {
-            platform = attributes.departure_platform_actual;
-        }
+                        <div class="ns_card_route">
+                            <span>${translation.next} - ${tripAttributes.next_train}</span>
+                        </div>
+                        
+                        <div class="ns_card_transfers">
+                            <span>${translation.transfers} - ${tripAttributes.transfers}</span>
+                        </div>
 
-        let next = '';
-        if (attributes.next_train) {
-            next = attributes.next_train
-        }
-
-        this.content.innerHTML = `
-        <div class="ns_card_departure_time">
-          <span>${translation.depart}</span>
-          <b>${attributes.departure_time_planned} <i>${delay}</i></b>
-        </div>
-
-        <div class="ns_card_departure_platform">
-          <span>${translation.platform}</span>
-          <b>${platform}</b>
-        </div>
-
-        <div class="ns_card_route">
-          <span>${translation.route}</span>
-          <b>${attributes.route[0]}</b>
-          <b>${arrivalLoc}</b>
-        </div>
-
-        <div class="ns_card_route">
-          <span>${translation.next} - ${next}</span>
-        </div>
-        
-        <div class="ns_card_transfers">
-          <span>${translation.transfers} - ${attributes.tranfers}</span>
-        </div>
-
-        <div class="ns_card_updated">
-          <span>${translation.updated} ${attributes.last_updated}</span>
-        </div>
-        <br><br>
-
-      `;
+                        <div class="ns_card_updated">
+                            <span>${translation.updated} ${tripAttributes.last_updated}</span>
+                        </div>
+                    </div>
+                </ha-card>`;
+        }).join('');
     }
 
     // The user supplied configuration. Throw an exception and Home Assistant
@@ -194,11 +171,36 @@ class NsStatusCard extends HTMLElement {
         this.config = config;
     }
 
-
     // The height of your card. Home Assistant uses this to automatically
     // distribute all cards over the available columns.
     getCardSize() {
         return 3;
+    }
+
+    // Function to get attributes for a specific trip
+    attributesForTrip(attributes, tripNumber) {
+        return {
+            departure_time_planned: attributes[`departure_time_planned_trip_${tripNumber}`],
+            departure_platform_actual: attributes[`departure_platform_actual_trip_${tripNumber}`],
+            route: attributes[`route_trip_${tripNumber}`],
+            next_train: attributes[`next_train_trip_${tripNumber}`],
+            transfers: attributes[`transfers_trip_${tripNumber}`],
+            last_updated: attributes[`last_updated_trip_${tripNumber}`],
+            departure_delay: attributes[`departure_delay_trip_${tripNumber}`]
+        };
+    }
+
+    // Function to calculate delay
+    getDelay(attributes) {
+        let delay = '';
+        if (attributes.departure_delay == true) {
+            const startTime = new Date('2013/10/09 ' + attributes.departure_time_planned);
+            const endTime = new Date('2013/10/09 ' + attributes.departure_time_actual);
+            const difference = endTime.getTime() - startTime.getTime();
+            const delayTime = Math.round(difference / 60000);
+            delay = '+' + delayTime;
+        }
+        return delay;
     }
 }
 
