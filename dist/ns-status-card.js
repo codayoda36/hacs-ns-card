@@ -13,17 +13,21 @@ class NsStatusCard extends HTMLElement {
                         scroll-snap-type: x mandatory;
                         scrollbar-width: none; /* Hides scrollbar in Firefox */
                         -ms-overflow-style: none; /* Hides scrollbar in IE and Edge */
+                        width: 100%; /* Ensure the slider takes up the full width */
                     }
 
                     .slider-container::-webkit-scrollbar {
                         display: none; /* Hides scrollbar in Chrome, Safari, and Opera */
                     }
 
-                     .ns_card {
+                    .ns_card {
+                        flex: 0 0 auto; /* Make sure each card has a fixed size and doesn't grow */
+                        margin-right: 8px; /* Adjust margin as needed */
                         background-color: #FEC919;
                         background-image: url('/local/community/hacs-ns-card/ns_card_bg.jpg');
                         background-size: cover;
                         color: #000;
+                        scroll-snap-align: start; /* Snap each card to the start of the container */
                     }
                     .ns_card_departure_platform {
                         position: absolute;
