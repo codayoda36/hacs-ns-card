@@ -131,7 +131,7 @@ class NsStatusCard extends HTMLElement {
             }
         };
 
-        const trips = Array.from({ length: 6 }, (_, i) => i + 1);
+        const trips = Array.from({ length: 2 }, (_, i) => i + 1);
 
         this.content.innerHTML = trips.map((tripNumber) => {
             const tripAttributes = this.attributesForTrip(hass.states[this.config.entity].attributes, tripNumber);
