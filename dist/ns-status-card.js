@@ -1,8 +1,5 @@
 class NsStatusCard extends HTMLElement {
-    // Whenever the state changes, a new `hass` object is set. Use this to
-    // update your content.
     set hass(hass) {
-        // Initialize the content if it's not there yet.
         if (!this.content) {
             this.innerHTML = `
                 <div id="slider-container" class="slider-container"></div>
@@ -10,49 +7,57 @@ class NsStatusCard extends HTMLElement {
                     .slider-container {
                         display: flex;
                         overflow-x: auto;
+                        scrollbar-width: none;
+                        -ms-overflow-style: none;
+                        width: 100%;
                         scroll-snap-type: x mandatory;
-                        scrollbar-width: none; /* Hides scrollbar in Firefox */
-                        -ms-overflow-style: none; /* Hides scrollbar in IE and Edge */
-                        width: 100%; /* Ensure the slider takes up the full width */
+                        white-space: nowrap;
                     }
 
                     .slider-container::-webkit-scrollbar {
-                        display: none; /* Hides scrollbar in Chrome, Safari, and Opera */
+                        display: none;
                     }
 
                     .ns_card {
-                        flex: 0 0 auto; /* Make sure each card has a fixed size and doesn't grow */
-                        margin-right: 8px; /* Adjust margin as needed */
+                        flex: 0 0 auto;
+                        margin-right: 8px;
                         background-color: #FEC919;
                         background-image: url('/local/community/hacs-ns-card/ns_card_bg.jpg');
                         background-size: cover;
                         color: #000;
-                        scroll-snap-align: start; /* Snap each card to the start of the container */
+                        scroll-snap-align: start;
+                        width: 300px; /* Set the width of each card */
                     }
+
                     .ns_card_departure_platform {
                         position: absolute;
                         right: 10px;
                         top: 10px;
                     }
+
                     .ns_card_departure_platform span {
                         width: 100%;
                         font-size: 10px;
                         display: block;
                     }
+
                     .ns_card_departure_platform b {
                         font-size: 32px;
                         font-weight: 800;
                     }
+
                     .ns_card_departure_time span {
                         width: 100%;
                         font-size: 10px;
                         display: block;
                         line-height: 1.2;
                     }
+
                     .ns_card_departure_time b {
                         font-size: 18px;
                         font-weight: 700;
                     }
+
                     .ns_card_departure_time b i {
                         color: red;
                         font-style: normal;
@@ -69,10 +74,11 @@ class NsStatusCard extends HTMLElement {
                         display: block;
                         line-height: 1.2;
                     }
+
                     .ns_card_route b {
                         font-size: 18px;
                         font-weight: 700;
-                        display:block;
+                        display: block;
                     }
 
                     .ns_card_transfers {
@@ -85,10 +91,11 @@ class NsStatusCard extends HTMLElement {
                         display: block;
                         line-height: 1.2;
                     }
+
                     .ns_card_transfers b {
                         font-size: 18px;
                         font-weight: 700;
-                        display:block;
+                        display: block;
                     }
 
                     .ns_card_updated {
@@ -124,7 +131,7 @@ class NsStatusCard extends HTMLElement {
             }
         };
 
-        const trips = Array.from({ length: 2 }, (_, i) => i + 1); // Create an array [1, 2, 3, 4, 5, 6]
+        const trips = Array.from({ length: 6 }, (_, i) => i + 1);
 
         this.content.innerHTML = trips.map((tripNumber) => {
             const tripAttributes = this.attributesForTrip(hass.states[this.config.entity].attributes, tripNumber);
@@ -164,10 +171,10 @@ class NsStatusCard extends HTMLElement {
                     </div>
                 </ha-card>`;
         }).join('');
+
+        this.content.style.scrollSnapType = 'x mandatory'; // Ensure correct slider behavior
     }
 
-    // The user supplied configuration. Throw an exception and Home Assistant
-    // will render an error card.
     setConfig(config) {
         if (!config.entity) {
             throw new Error('You need to define an entity');
@@ -175,13 +182,10 @@ class NsStatusCard extends HTMLElement {
         this.config = config;
     }
 
-    // The height of your card. Home Assistant uses this to automatically
-    // distribute all cards over the available columns.
     getCardSize() {
         return 3;
     }
 
-    // Function to get attributes for a specific trip
     attributesForTrip(attributes, tripNumber) {
         return {
             departure_time_planned: attributes[`departure_time_planned_trip_${tripNumber}`],
@@ -194,7 +198,6 @@ class NsStatusCard extends HTMLElement {
         };
     }
 
-    // Function to calculate delay
     getDelay(attributes) {
         let delay = '';
         if (attributes.departure_delay == true) {
