@@ -120,7 +120,7 @@ class NsStatusCard extends HTMLElement {
             }
         };
 
-        const trips = Array.from({ length: 6 }, (_, i) => i + 1); // Create an array [1, 2, 3, 4, 5, 6]
+        const trips = Array.from({ length: 2 }, (_, i) => i + 1); // Create an array [1, 2, 3, 4, 5, 6]
 
         this.content.innerHTML = trips.map((tripNumber) => {
             const tripAttributes = this.attributesForTrip(hass.states[this.config.entity].attributes, tripNumber);
