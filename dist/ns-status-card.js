@@ -1,213 +1,242 @@
-class NsStatusCard extends HTMLElement {
-    set hass(hass) {
-        if (!this.content) {
-            this.innerHTML = `
-                <div id="slider-container" class="slider-container"></div>
-                <style>
-                    .slider-container {
-                        display: flex;
-                        overflow-x: auto;
-                        scrollbar-width: none;
-                        -ms-overflow-style: none;
-                        width: 100%;
-                        scroll-snap-type: x mandatory;
-                        white-space: nowrap;
-                    }
+class SlideshowCard extends HTMLElement {
+  set hass(hass) {
+      this.entityId = this.config.entity;
+      this.state = hass.states[this.entityId];
+      this.testattributes = this.state.attributes;
+      
+      // Check if testattributes is defined before triggering a render
+      if (this.testattributes) {
+            this.render();
+      }
+  }
 
-                    .slider-container::-webkit-scrollbar {
-                        display: none;
-                    }
+  constructor() {
+    super();
+    this.currentIndex = 0;
+    this.handleButtonClick = this.handleButtonClick.bind(this);
+  }
 
-                    .ns_card {
-                        flex: 0 0 auto;
-                        margin-right: 8px;
-                        background-color: #FEC919;
-                        background-image: url('/local/community/hacs-ns-card/ns_card_bg.jpg');
-                        background-size: cover;
-                        color: #000;
-                        scroll-snap-align: start;
-                        width: 300px; /* Set the width of each card */
-                    }
-		    .ns_card_departure_platform {
-                        position: absolute;
-                        right: 10px;
-                        top: 10px;
-                    }
+  connectedCallback() {
+    this.addEventListener('click', this.handleButtonClick);
+  }
 
-                    .ns_card_departure_platform span {
-                        width: 100%;
-                        font-size: 10px;
-                        display: block;
-                    }
+  disconnectedCallback() {
+    this.removeEventListener('click', this.handleButtonClick);
+  }
 
-                    .ns_card_departure_platform b {
-                        font-size: 32px;
-                        font-weight: 800;
-                    }
+  // Render the slideshow
+  render() {
+    if (!this.testattributes) {
+        this.innerHTML = '';
+        return;
+    }
+    
+    const lastUpdatedString = this.testattributes['last_updated'];
+    const lastUpdatedTime = new Date(lastUpdatedString);
+    const currentTime = new Date();
 
-                    .ns_card_departure_time span {
-                        width: 100%;
-                        font-size: 10px;
-                        display: block;
-                        line-height: 1.2;
-                    }
+    const timeDifference = Math.floor((currentTime - lastUpdatedTime) / (1000 * 60));
+    const updatedText = `${timeDifference} minutes ago`;
+    
+    const plannedDepartureTime = this.testattributes[`departure_time_planned_trip_${this.currentIndex + 1}`];
+    const departureDelay = this.testattributes[`departure_delay_trip_${this.currentIndex + 1}`];
 
-                    .ns_card_departure_time b {
-                        font-size: 18px;
-                        font-weight: 700;
-                    }
+    let delayText = ''; // Initialize an empty string
 
-                    .ns_card_departure_time b i {
-                        color: red;
-                        font-style: normal;
-                        font-weight: 800;
-                    }
+    if (departureDelay > 0) {
+        delayText = `<i>+${departureDelay}</i>`;
+    }
 
-                    .ns_card_route {
-                        margin-top: 4px;
-                    }
-
-                    .ns_card_route span {
-                        width: 100%;
-                        font-size: 10px;
-                        display: block;
-                        line-height: 1.2;
-                    }
-
-                    .ns_card_route b {
-                        font-size: 18px;
-                        font-weight: 700;
-                        display: block;
-                    }
-
-                    .ns_card_transfers {
-                        margin-top: 4px;
-                    }
-
-                    .ns_card_transfers span {
-                        width: 100%;
-                        font-size: 10px;
-                        display: block;
-                        line-height: 1.2;
-                    }
-
-                    .ns_card_transfers b {
-                        font-size: 18px;
-                        font-weight: 700;
-                        display: block;
-                    }
-
-                    .ns_card_updated {
-                        position: absolute;
-                        bottom: 12px;
-                        font-size: 12px;
-                    }
-                </style>
-            `;
-            this.content = this.querySelector('#slider-container');
+    this.innerHTML = `
+      <style>
+        :host {
+          --arrow-size: 10px; /* Adjust the arrow size as needed */
         }
 
-        const translations = {
-            "en": {
-                "depart": "Departs",
-                "platform": "Platform",
-                "route": "Route",
-                "next": "Next",
-                "updated": "Last updated at:",
-                "minutes": "min",
-                "seconds": "sec",
-                "transfers": "Transfers"
-            },
-            "nl": {
-                "depart": "Geldig op",
-                "platform": "Perron",
-                "route": "Enkele Reis",
-                "next": "Volgende",
-                "updated": "Laatst geüpdatet op:",
-                "minutes": "minuten",
-                "seconds": "seconden",
-                "transfers": "Overstappen"
-            }
-        };
-
-        const trips = Array.from({ length: 2 }, (_, i) => i + 1);
-
-        this.content.innerHTML = trips.map((tripNumber) => {
-            const tripAttributes = this.attributesForTrip(hass.states[this.config.entity].attributes, tripNumber);
-            const delay = this.getDelay(tripAttributes);
-            const translation = translations[hass.language] || translations["en"];
-
-            return `
-                <div class="ns_card">
-                    <div class="card-content">
-                        <div class="ns_card_departure_time">
-                            <span>${translation.depart} - Trip ${tripNumber}</span>
-                            <b>${tripAttributes.departure_time_planned} <i>${delay}</i></b>
-                        </div>
-
-                        <div class="ns_card_departure_platform">
-                            <span>${translation.platform}</span>
-                            <b>${tripAttributes.departure_platform_actual}</b>
-                        </div>
-
-                        <div class="ns_card_route">
-                            <span>${translation.route}</span>
-                            <b>${tripAttributes.route[0]}</b>
-                            <b>${tripAttributes.route[1]}</b>
-                        </div>
-
-                        <div class="ns_card_route">
-                            <span>${translation.next} - ${tripAttributes.next_train}</span>
-                        </div>
-                        
-                        <div class="ns_card_transfers">
-                            <span>${translation.transfers} - ${tripAttributes.transfers}</span>
-                        </div>
-
-                        <div class="ns_card_updated">
-                            <span>${translation.updated} ${tripAttributes.last_updated}</span>
-                        </div>
-                    </div>
-                </div>`;
-        }).join('');
-
-        this.content.style.scrollSnapType = 'x mandatory'; // Ensure correct slider behavior
-    }
-
-    setConfig(config) {
-        if (!config.entity) {
-            throw new Error('You need to define an entity');
+        .slideshow {
+          position: relative;
         }
-        this.config = config;
-    }
 
-    getCardSize() {
-        return 3;
-    }
-
-    attributesForTrip(attributes, tripNumber) {
-        return {
-            departure_time_planned: attributes[`departure_time_planned_trip_${tripNumber}`],
-            departure_platform_actual: attributes[`departure_platform_actual_trip_${tripNumber}`],
-            route: attributes[`route_trip_${tripNumber}`],
-            next_train: attributes[`next_train_trip_${tripNumber}`],
-            transfers: attributes[`transfers_trip_${tripNumber}`],
-            last_updated: attributes[`last_updated_trip_${tripNumber}`],
-            departure_delay: attributes[`departure_delay_trip_${tripNumber}`]
-        };
-    }
-
-    getDelay(attributes) {
-        let delay = '';
-        if (attributes.departure_delay == true) {
-            const startTime = new Date('2013/10/09 ' + attributes.departure_time_planned);
-            const endTime = new Date('2013/10/09 ' + attributes.departure_time_actual);
-            const difference = endTime.getTime() - startTime.getTime();
-            const delayTime = Math.round(difference / 60000);
-            delay = '+' + delayTime;
+        .arrow-container {
+          display: flex;
+          justify-content: center;
+          position: absolute;
+          bottom: 10px;
+          width: 100%;
         }
-        return delay;
+
+        .arrow {
+          font-size: var(--arrow-size);
+          cursor: pointer;
+          color: white;
+          background-color: rgba(0, 0, 0, 0.5);
+          padding: 10px;
+          border: none;
+          margin: 5px;
+        }
+
+        #prevBtn {
+          margin-right: 5px;
+        }
+
+        #nextBtn {
+          margin-left: 5px;
+        }
+
+        img {
+          max-width: 100%;
+          height: auto;
+        }
+        
+        .ns_card {
+          background-color: #FEC919;
+          background-image: url('/local/community/hacs-ns-card/ns_card_bg.jpg');
+          background-size: cover;
+          color: #000;
+        }
+        
+        .ns_card_departure_platform {
+          position: absolute;
+          right: 10px;
+          top: 10px;
+        }
+        
+        .ns_card_departure_platform span {
+          width: 100%;
+          font-size: 10px;
+          display: block;
+        }
+        
+        .ns_card_departure_platform b {
+          font-size: 32px;
+          font-weight: 800;
+        }
+        
+        .ns_card_departure_time span {
+          width: 100%;
+          font-size: 10px;
+          display: block;
+          line-height: 1.2;
+        }
+        
+        .ns_card_departure_time b {
+          font-size: 18px;
+          font-weight: 700;
+        }
+        
+        .ns_card_departure_time b i {
+          color: red;
+          font-style: normal;
+          font-weight: 800;
+        }
+
+        .ns_card_route {
+          margin-top: 4px;
+        }
+
+        .ns_card_route span {
+          width: 100%;
+          font-size: 10px;
+          display: block;
+          line-height: 1.2;
+        }
+        
+        .ns_card_route b {
+          font-size: 18px;
+          font-weight: 700;
+          display:block;
+        }
+
+        .ns_card_updated {
+          position: absolute;
+          bottom: 12px;
+          font-size: 12px;
+        }
+        .ns_card_departure_trip {
+          position: absolute;
+          right: 15px;
+          top: 75%;
+        }
+        
+        .ns_card_departure_trip span {
+          width: 100%;
+          font-size: 10px;
+          display: block;
+        }
+        
+        .card {
+          box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
+          transition: 0.3s;
+          background-color: #FEC919;
+          border-radius: 15px;
+          padding: 20px 16px;
+          background-image: url('/local/community/hacs-ns-card/ns_card_bg.jpg');
+          background-size: cover;
+        }
+      </style>
+      <div class="slideshow">
+        <div class="card">
+          <div class="ns_card_departure_time">
+            <span>Vertrek tijd</span>
+            <b>${plannedDepartureTime} ${delayText}</b>
+          </div>
+  
+          <div class="ns_card_departure_platform">
+            <span>Perron</span>
+            <b>${this.testattributes[`departure_platform_planned_trip_${this.currentIndex + 1}`]}</b>
+          </div>
+  
+          <div class="ns_card_route">
+            <span>Enkele Reis</span>
+            <b>${this.testattributes[`route_trip_${this.currentIndex + 1}`][0]}</b>
+            <b>${this.testattributes[`route_trip_${this.currentIndex + 1}`][this.testattributes[`route_trip_${this.currentIndex + 1}`].length - 1]}</b>
+          </div>
+          <div class="ns_card_updated">
+            <span>Updated ${updatedText}</span>
+          </div>
+          <div class="ns_card_trip">
+            <span>Transfers ${this.testattributes[`transfers_trip_${this.currentIndex + 1}`]}</span>
+          </div>
+          <div class="ns_card_departure_trip">
+            <span>Trip</span>
+            <b>${this.currentIndex + 1}</b>
+          </div>
+          <br><br>
+        </div>
+        <div class="arrow-container">
+          <button class="arrow" id="prevBtn">&#10094;</button>
+          <button class="arrow" id="nextBtn">&#10095;</button>
+        </div>
+      </div>
+    `;
+  }
+
+  // Set configuration for the slideshow
+  setConfig(config) {
+    if (!config.entity) {
+      throw new Error("You need to define an entity");
     }
+    this.config = config;
+    this.entityId = this.config.entity;
+    this.render();
+  }
+
+  // Handle button click events
+  handleButtonClick(event) {
+    const target = event.target;
+    if (target.id === 'prevBtn') {
+      console.log(this.testattributes);
+      this.navigate(-1);
+    } else if (target.id === 'nextBtn') {
+      this.navigate(1);
+    }
+  }
+
+  // Navigate to the next or previous slide
+  navigate(direction) {
+    this.currentIndex = (this.currentIndex + direction + this.testattributes[`trips_showen`]) % this.testattributes[`trips_showen`];
+    this.render();  // Update the view
+  }
 }
 
-customElements.define('ns-status-card', NsStatusCard);
+customElements.define('slideshow-card', SlideshowCard);
