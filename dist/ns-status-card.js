@@ -1,4 +1,4 @@
-class SlideshowCard extends HTMLElement {
+class NsStatusCard extends HTMLElement {
   set hass(hass) {
       this.entityId = this.config.entity;
       this.state = hass.states[this.entityId];
@@ -164,6 +164,10 @@ class SlideshowCard extends HTMLElement {
           display: block;
         }
         
+        .ns_card_trip {
+          font-size: 15px;
+        }
+        
         .card {
           box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
           transition: 0.3s;
@@ -195,7 +199,13 @@ class SlideshowCard extends HTMLElement {
             <span>Updated ${updatedText}</span>
           </div>
           <div class="ns_card_trip">
-            <span>Transfers ${this.testattributes[`transfers_trip_${this.currentIndex + 1}`]}</span>
+            <span>Transfers: ${this.testattributes[`transfers_trip_${this.currentIndex + 1}`]}</span>
+          </div>
+          <div class="ns_card_trip">
+            <span>Status: ${this.testattributes[`status_trip_${this.currentIndex + 1}`]}</span>
+          </div>
+          <div class="ns_card_trip">
+            <span>Reistijd: ${this.testattributes[`travel_time_actual_trip_${this.currentIndex + 1}`]} minuten</span>
           </div>
           <div class="ns_card_departure_trip">
             <span>Trip</span>
@@ -239,4 +249,5 @@ class SlideshowCard extends HTMLElement {
   }
 }
 
-customElements.define('slideshow-card', SlideshowCard);
+
+customElements.define('ns-status-card', NsStatusCard);
